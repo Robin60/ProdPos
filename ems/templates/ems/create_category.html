@@ -1,0 +1,29 @@
+{% extends 'ems/base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="card shadow-lg p-4">
+    <h3 class="text-center text-success mb-4">Register Programme</h3>
+    <form method="post" action="{% url 'create_category' %}">
+      {% csrf_token %}
+
+      <div class="mb-3">
+        <label for="categoryName" class="form-label">Programme Category</label>
+        <input
+          type="text"
+          class="form-control"
+          id="categoryName"
+          name="name"
+          placeholder="Enter category name"
+          required
+        />
+      </div>
+
+      <div class="text-end">
+        <a href="{% url 'category_list' %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">Create</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

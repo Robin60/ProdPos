@@ -1,0 +1,304 @@
+{% extends "ems/base.html" %}
+{% load static %}
+
+{% block title %}Event Timeline{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-4" style="height: calc(100vh - 110px); display: flex; flex-direction: column;">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="text-primary mb-0">Research Events Timeline</h2>
+    <div class="d-flex gap-2">
+      <button id="view-day" class="btn btn-primary">Day</button>
+      <button id="view-week" class="btn btn-outline-primary">Week</button>
+      <button id="view-month" class="btn btn-outline-primary">Month</button>
+      <a href="{% url 'create_event' %}" class="btn btn-success">Add Event</a>
+    </div>
+    <div class="d-flex gap-2">
+      <input type="text" id="searchEvent" class="form-control" placeholder="Search events by title...">
+      <button id="searchBtn" class="btn btn-primary">Search</button>
+    </div>
+  </div>
+
+  <!-- Gantt + Summary Container -->
+  <div id="gantt-container" class="border rounded shadow-sm bg-white flex-grow-1 d-flex flex-column">
+    <div id="gantt" style="height: 300px; overflow-x: auto;"></div>
+
+    <div id="event-summary" class="border-top p-3 bg-light flex-grow-1 overflow-hidden">
+      <h5 class="text-secondary mb-3">Event Summaries</h5>
+      <div id="event-cards" class="d-flex gap-3"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Outcome Modal -->
+<div class="modal fade" id="outcomeModal" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="modalEventTitle">Event Outcomes</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Existing Outcomes -->
+        <div id="outcomesList" class="mb-4"></div>
+
+        <hr>
+        <h6>Add / Edit Outcome</h6>
+        <form id="newOutcomeForm">
+          {% csrf_token %}
+          <input type="hidden" id="eventId">
+          <input type="hidden" id="outcomeId">
+
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label>Start Date</label>
+              <input type="datetime-local" id="start_date" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label>End Date</label>
+              <input type="datetime-local" id="end_date" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label>Duration (hrs)</label>
+              <input type="number" step="0.1" id="duration" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label>Rapporteur</label>
+              <input type="text" id="rappo" class="form-control" required>
+            </div>
+            <div class="col-12">
+              <label>Topics</label>
+              <textarea id="topics" class="form-control"></textarea>
+            </div>
+            <div class="col-12">
+              <label>Outcome Text</label>
+              <textarea id="outcome_text" class="form-control" required></textarea>
+            </div>
+            <div class="col-12">
+              <label>Recommendation</label>
+              <textarea id="recommendation" class="form-control"></textarea>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-success mt-3">Save Outcome</button>
+        </form>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/frappe-gantt/dist/frappe-gantt.css">
+<style>
+  html, body { height: 100%; overflow: hidden; background-color: #f8fafc; }
+  .gantt .bar { cursor: pointer; }
+
+  #event-cards { display: flex; gap: 1rem; width: max-content; animation: slide-left 20s linear infinite; }
+  #event-summary:hover #event-cards { animation-play-state: paused; }
+  #event-cards > div { flex: 0 0 auto; width: 300px; height: 180px; border-radius: 0.5rem; background-color: #fff; padding: 1rem; box-shadow: 0 2px 6px rgba(0,0,0,0.1); transition: transform 0.2s; cursor: pointer; }
+  #event-cards > div:hover { transform: scale(1.05); }
+
+  @keyframes slide-left { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+  .kwp2 .bar { fill: #4e79a7; }
+  .kwp3 .bar { fill: #f28e2b; }
+  .other .bar { fill: #76b7b2; }
+  .general .bar { fill: #b07aa1; }
+
+  #today-line { position: absolute; top: 0; bottom: 0; width: 2px; background: red; z-index: 10; opacity: 0.7; pointer-events: none; }
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://unpkg.com/frappe-gantt/dist/frappe-gantt.umd.js"></script>
+
+<script>
+{% autoescape off %}
+const rawData = {{ logs_json }};
+{% endautoescape %}
+
+let logs = Array.isArray(rawData) ? rawData : [];
+
+// Gantt tasks
+const tasks = logs.map(l => ({
+  id: String(l.id),
+  name: l.name || "Event",
+  start: new Date(l.start_date),
+  end: new Date(l.end_date),
+  progress: 100,
+  custom_class: (l.project_type || "general").toLowerCase()
+}));
+
+let gantt;
+setTimeout(() => {
+  gantt = new Gantt("#gantt", tasks, {
+    view_mode: 'Day',
+    date_format: 'YYYY-MM-DD',
+    on_click: task => openOutcomesModal(task.id, task.name),
+    custom_popup_html: task => `
+      <div class="p-3 bg-white rounded shadow-sm">
+        <h6 class="fw-bold mb-2">${task.name}</h6>
+        <p class="mb-1"><strong>Start:</strong> ${task.start.toISOString().split('T')[0]}</p>
+        <p class="mb-2"><strong>End:</strong> ${task.end.toISOString().split('T')[0]}</p>
+        <button class='btn btn-sm btn-outline-primary w-100' onclick="openOutcomesModal('${task.id}', '${task.name}')">View/Add Outcomes</button>
+      </div>`
+  });
+
+  // Scroll to today line
+  const today = new Date();
+  const todayX = gantt.gantt_start && gantt.gantt_end
+    ? ((today - new Date(gantt.gantt_start)) / (new Date(gantt.gantt_end) - new Date(gantt.gantt_start))) * gantt.$svg.querySelector("svg").clientWidth
+    : 0;
+  const container = document.getElementById('gantt-container');
+  if(todayX>0){
+    container.scrollLeft = todayX - container.clientWidth/2;
+    const todayLine = document.createElement('div');
+    todayLine.id='today-line';
+    todayLine.style.left = `${todayX}px`;
+    container.appendChild(todayLine);
+  }
+}, 100);
+
+// Render Event Summary Cards
+function renderEventSummaries(logs){
+  const container = document.getElementById('event-cards');
+  container.innerHTML='';
+  logs.forEach(l => {
+    const box = document.createElement('div');
+    box.className = l.project_type || 'other';
+    box.innerHTML = `
+      <h6 class="fw-bold text-primary mb-2">${l.name}</h6>
+      <p>${l.description || 'No description'}</p>
+      <p><strong>Organizer:</strong> ${l.organizer || 'N/A'}</p>
+    `;
+    box.addEventListener('click', ()=>openOutcomesModal(l.id, l.name));
+    container.appendChild(box);
+  });
+}
+setTimeout(()=>renderEventSummaries(logs), 200);
+
+// Gantt view buttons
+const setView = (mode, activeBtnId) => {
+  gantt?.change_view_mode(mode);
+  ['view-day','view-week','view-month'].forEach(id=>{
+    const btn = document.getElementById(id);
+    if(btn){ 
+      btn.classList.toggle('btn-primary', id===activeBtnId); 
+      btn.classList.toggle('btn-outline-primary', id!==activeBtnId); 
+    }
+  });
+};
+document.getElementById('view-day')?.addEventListener('click',()=>setView('Day','view-day'));
+document.getElementById('view-week')?.addEventListener('click',()=>setView('Week','view-week'));
+document.getElementById('view-month')?.addEventListener('click',()=>setView('Month','view-month'));
+
+// Outcome Modal
+function openOutcomesModal(eventId, eventName){
+  $("#modalEventTitle").text(eventName);
+  $("#eventId").val(eventId);
+  $("#outcomeId").val("");
+  $("#newOutcomeForm")[0].reset();
+  $("#outcomesList").html("Loading...");
+
+  $.get(`/events/${eventId}/outcomes/`, function(data){
+    if(!data.outcomes.length){
+      $("#outcomesList").html("<p>No outcomes logged for this event...</p>");
+    } else {
+      let html = '<ul class="list-group">';
+      data.outcomes.forEach(o => {
+        html += `<li class="list-group-item" data-id="${o.id}" style="cursor:pointer;">
+          <strong>${o.outcome_text}</strong> (by ${o.rappo})<br>
+          <em>Topics:</em> ${o.topics || '-'} | <em>Recommendation:</em> ${o.recommendation || '-'}
+        </li>`;
+      });
+      html += '</ul>';
+      $("#outcomesList").html(html);
+
+      $("#outcomesList li").click(function(){
+        const o = data.outcomes.find(x=>x.id==$(this).data("id"));
+        if(o){
+          $("#outcomeId").val(o.id);
+          $("#start_date").val(o.start_date);
+          $("#end_date").val(o.end_date);
+          $("#duration").val(o.duration);
+          $("#rappo").val(o.rappo);
+          $("#topics").val(o.topics);
+          $("#outcome_text").val(o.outcome_text);
+          $("#recommendation").val(o.recommendation);
+        }
+      });
+    }
+
+    new bootstrap.Modal(document.getElementById('outcomeModal')).show();
+  });
+}
+function filterEvents(query) {
+  const filteredLogs = logs.filter(l => 
+    l.name.toLowerCase().includes(query.toLowerCase())
+  );
+
+  // Update event summary cards
+  renderEventSummaries(filteredLogs);
+
+  // Update Gantt chart tasks
+  const filteredTasks = filteredLogs.map(l => ({
+    id: String(l.id),
+    name: l.name,
+    start: new Date(l.start_date),
+    end: new Date(l.end_date),
+    progress: 100,
+    custom_class: (l.project_type || "general").toLowerCase()
+  }));
+
+  // Clear and re-render gantt
+  gantt.refresh(filteredTasks);
+}
+
+// Bind search button
+document.getElementById('searchBtn')?.addEventListener('click', () => {
+  const query = document.getElementById('searchEvent').value.trim();
+  filterEvents(query);
+});
+
+// Optional: search on enter key
+document.getElementById('searchEvent')?.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    const query = e.target.value.trim();
+    filterEvents(query);
+  }
+});
+
+
+// Submit Outcome (create or update)
+$('#newOutcomeForm').on('submit', function(e){
+  e.preventDefault();
+  const eventId = $("#eventId").val();
+  const outcomeId = $("#outcomeId").val(); // hidden input to store existing outcome ID if editing
+
+  const url = outcomeId 
+    ? `/outcomes/${outcomeId}/update/`   // Update existing outcome
+    : `/events/${eventId}/outcomes/`;    // Create new outcome
+  $.post(url, {
+    csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val(),
+    start_date: $("#start_date").val(),
+    end_date: $("#end_date").val(),
+    duration: $("#duration").val(),
+    rappo: $("#rappo").val(),
+    topics: $("#topics").val(),
+    outcome_text: $("#outcome_text").val(),
+    recommendation: $("#recommendation").val(),
+    outcome_id: outcomeId // include this for update
+  }).done(() => {
+    //openOutcomesModal(eventId, $("#modalEventTitle").text());
+    // Redirect to timeline page after saving
+    window.location.href = "{% url 'event_timeline' %}";
+  }).fail(() => alert("Error adding/updating outcome"));
+});
+
+</script>
+{% endblock %}

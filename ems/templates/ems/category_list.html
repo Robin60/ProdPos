@@ -1,0 +1,62 @@
+{% extends 'ems/base.html' %}
+{% load static %}
+
+{% block title %}Category List{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="text-center mb-4">
+    <h2 class="text-success">Programme Categories</h2>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="mb-3 text-right">
+    <a href="{% url 'create_category' %}" class="btn btn-primary">Add Programme</a>
+    <a href="{% url 'event_chart' %}" class="btn btn-info">View Event Chart</a>
+  </div>
+
+  <!-- Categories Table -->
+  <div class="card shadow-sm">
+    <div class="card-body">
+      {% if categories %}
+        <table class="table table-hover table-bordered">
+          <thead class="thead-light">
+            <tr>
+              <th>Category Name</th>
+              <th class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for category in categories %}
+              <tr>
+                <td>
+                  <a href="{% url 'category_events' category.id %}" class="text-primary font-weight-bold">
+                    {{ category.name }}
+                  </a>
+                </td>
+                <td class="text-center">
+                  <form method="post" action="{% url 'delete_category' category.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="text-muted text-center">No categories available. Please create one.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Message popup -->
+<script>
+  {% if messages %}
+      {% for message in messages %}
+          alert("{{ message }}");
+      {% endfor %}
+  {% endif %}
+</script>
+{% endblock %}

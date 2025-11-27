@@ -1,0 +1,62 @@
+{% extends 'ems/base.html' %}
+
+{% block title %}Pending Events Chart{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2 class="text-center mb-4">Pending Events by Category</h2>
+
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <canvas id="eventChart" width="400" height="400"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const ctx = document.getElementById('eventChart').getContext('2d');
+  
+  const data = {
+    labels: [{% for category, count in pending_counts.items %}'{{ category }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+    datasets: [{
+      label: 'Pending Events',
+      data: [{% for category, count in pending_counts.items %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+      backgroundColor: [
+        'rgba(255, 99, 132, 0.5)',
+        'rgba(54, 162, 235, 0.5)',
+        'rgba(255, 206, 86, 0.5)',
+        'rgba(75, 192, 192, 0.5)',
+        'rgba(153, 102, 255, 0.5)',
+        'rgba(255, 159, 64, 0.5)'
+      ],
+      borderColor: [
+        'rgba(255, 99, 132, 1)',
+        'rgba(54, 162, 235, 1)',
+        'rgba(255, 206, 86, 1)',
+        'rgba(75, 192, 192, 1)',
+        'rgba(153, 102, 255, 1)',
+        'rgba(255, 159, 64, 1)'
+      ],
+      borderWidth: 1
+    }]
+  };
+
+  const options = {
+    responsive: true,
+    plugins: {
+      legend: { display: true, position: 'top' },
+      title: { display: true, text: 'Pending Events by Category', font: { size: 18 } }
+    },
+    scales: {
+      y: { beginAtZero: true, title: { display: true, text: 'Number of Pending Events' } },
+      x: { title: { display: true, text: 'Event Categories' } }
+    }
+  };
+
+  new Chart(ctx, { type: 'bar', data: data, options: options });
+});
+</script>
+{% endblock %}

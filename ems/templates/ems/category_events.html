@@ -1,0 +1,133 @@
+{% extends 'ems/base.html' %}
+
+{% block title %}{{ category.name }} Events{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2 class="text-center">{{ category.name }} Events</h2>
+  <br>
+  <div class="mb-3">
+    <a href="{% url 'create_event' %}" class="btn btn-primary">Add New Event</a>
+    <a href="{% url 'category_list' %}" class="btn btn-secondary ms-2">Back to Categories</a>
+  </div>
+
+  <table id="eventTable" class="table table-striped">
+    <thead class="table-dark">
+      <tr>
+        <th>Event ID</th>
+        <th>Name</th>
+        <th>Project Type</th>
+        <th>Start Date</th>
+        <th>Time Left</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for event in events %}
+      <tr>
+        <td>{{ event.id }}</td>
+        <td>{{ event.name }}</td>
+        <td>{{ event.get_project_type_display }}</td>
+        <td>{{ event.start_date }}</td>
+        <td><div id="countdown_{{ event.id }}" class="countdown-timer text-info fw-bold"></div></td>
+        <td>
+          <a href="{% url 'update_event' event.id %}" class="btn btn-primary btn-sm">Update</a>
+          <form method="post" action="{% url 'delete_event' event.id %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+          </form>
+          <button type="button" class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#eventModal_{{ event.id }}">Details</button>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="text-center text-muted">No events found in this category.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Event Details Modals -->
+{% for event in events %}
+<div class="modal fade" id="eventModal_{{ event.id }}" tabindex="-1" aria-labelledby="eventModalLabel_{{ event.id }}" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="eventModalLabel_{{ event.id }}">{{ event.name }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Event ID:</strong> {{ event.id }}</p>
+        <p><strong>Category:</strong> {{ event.category.name }}</p>
+        <p><strong>Project Type:</strong> {{ event.get_project_type_display }}</p>
+        <p><strong>Start Date:</strong> {{ event.start_date }}</p>
+        <p><strong>End Date:</strong> {{ event.end_date }}</p>
+        <p><strong>Description:</strong> {{ event.description|default:"-" }}</p>
+        <p><strong>Location:</strong> {{ event.location|default:"-" }}</p>
+        <p><strong>Organizer:</strong> {{ event.organizer|default:"-" }}</p>
+
+        <hr>
+        <h6>Outcomes</h6>
+        {% if event.outcome_entries.exists %}
+          <ul class="list-group">
+            {% for outcome in event.outcome_entries.all %}
+              <li class="list-group-item">
+                <strong>{{ outcome.outcome_text }}</strong>
+                {% if outcome.rappo %} (by {{ outcome.rappo }}){% endif %}<br>
+                <em>Topics:</em> {{ outcome.topics|default:"-" }} |
+                <em>Recommendation:</em> {{ outcome.recommendation|default:"-" }}<br>
+                <small>Start: {{ outcome.start_date }} | End: {{ outcome.end_date }} | Duration: {{ outcome.duration }}</small>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted">No outcomes logged for this event.</p>
+        {% endif %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Countdown logic (works with DateTime fields)
+  function updateCountdownTimers() {
+    {% for event in events %}
+    (function() {
+      var startDateStr = "{{ event.start_date|date:'c' }}"; // ISO 8601
+      var startDate = new Date(startDateStr);
+      var now = new Date();
+      var timeDiff = startDate - now;
+      var countdownEl = document.getElementById("countdown_{{ event.id }}");
+
+      if (!countdownEl) return;
+      if (isNaN(timeDiff)) {
+        countdownEl.innerText = "Invalid date";
+        return;
+      }
+
+      if (timeDiff > 0) {
+        var days = Math.floor(timeDiff / (1000*60*60*24));
+        var hours = Math.floor((timeDiff % (1000*60*60*24)) / (1000*60*60));
+        var minutes = Math.floor((timeDiff % (1000*60*60)) / (1000*60));
+        var seconds = Math.floor((timeDiff % (1000*60)) / 1000);
+        countdownEl.innerText = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+      } else {
+        countdownEl.innerText = "Event has started";
+      }
+    })();
+    {% endfor %}
+  }
+
+  document.addEventListener("DOMContentLoaded", function() {
+    updateCountdownTimers();
+    setInterval(updateCountdownTimers, 1000);
+  });
+</script>
+{% endblock %}

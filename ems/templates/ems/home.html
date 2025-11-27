@@ -1,0 +1,119 @@
+{% extends "ems/base.html" %}
+{% load static %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-4" style="display:flex; gap:20px; height: calc(100vh - 110px);">
+
+  <!-- Upcoming Activities -->
+  <div class="flex-grow-1 border rounded p-3 overflow-auto" style="max-width: 300px;">
+    <h5 class="text-secondary mb-3">Upcoming Activities</h5>
+    <div id="upcoming-list" class="d-flex flex-column gap-2"></div>
+  </div>
+
+  <!-- Pending Outcomes -->
+  <div class="flex-grow-1 border rounded p-3 overflow-auto" style="max-width: 300px;">
+    <h5 class="text-secondary mb-3">Pending Outcomes</h5>
+    <div id="pending-list" class="d-flex flex-column gap-2"></div>
+  </div>
+
+</div>
+
+<!-- Event Modals -->
+{% for log in logs %}
+<div class="modal fade" id="eventModal_{{ log.id }}" tabindex="-1" aria-labelledby="eventModalLabel_{{ log.id }}" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="eventModalLabel_{{ log.id }}">{{ log.name }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Project Type:</strong> {{ log.project_type }}</p>
+        <p><strong>Description:</strong> {{ log.description }}</p>
+        <p><strong>Organizer:</strong> {{ log.organizer }}</p>
+        <p><strong>Start Date:</strong> {{ log.start_date }}</p>
+        <p><strong>End Date:</strong> {{ log.end_date }}</p>
+
+        <!-- Outcomes -->
+        <div>
+          <h6>Outcomes:</h6>
+          {% if log.outcomes_entries %}
+            <ul>
+              {% for o in log.outcomes_entries %}
+              <li>
+                <strong>{{ o.outcome_text }}</strong>
+                {% if o.recommendation %}- Recommendation: {{ o.recommendation }}{% endif %}
+              </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="text-muted">No outcomes recorded yet.</p>
+          {% endif %}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  {% autoescape off %}
+  const logs = {{ logs_json }};
+  {% endautoescape %}
+
+  const now = new Date();
+
+  function createBox(log, type='upcoming') {
+    const box = document.createElement('div');
+    box.className = 'p-2 border rounded';
+    box.style.backgroundColor = '#f8f9fa';
+    box.style.transition = 'transform 0.2s';
+
+    let titleColor = '#007bff'; // default
+    if(type==='pending') {
+      titleColor = log.is_pending ? '#fd7e14' : '#28a745';
+    }
+
+    box.innerHTML = `<strong style="color:${titleColor}">${log.name}</strong>`;
+    if(log.description) box.innerHTML += `<div>${log.description}</div>`;
+    if(log.organizer) box.innerHTML += `<div>Organizer: ${log.organizer}</div>`;
+
+    return box;
+  }
+
+  const upcomingContainer = document.getElementById('upcoming-list');
+  const pendingContainer = document.getElementById('pending-list');
+
+  logs.forEach(log => {
+    const endDate = log.end_date ? new Date(log.end_date) : null;
+
+    // UPCOMING EVENTS
+    if(log.is_upcoming) {
+      const box = createBox(log);
+      upcomingContainer.appendChild(box);
+    }
+
+    // PENDING OUTCOMES → Event ended AND no outcome recorded
+    if(log.is_pending){
+      const box = createBox(log, 'pending');
+      box.style.cursor = 'pointer';
+
+      // Open modal when clicked
+      box.addEventListener('click', () => {
+        const modalEl = document.getElementById(`eventModal_${log.id}`);
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+      });
+
+      pendingContainer.appendChild(box);
+    }
+  });
+</script>
+{% endblock %}

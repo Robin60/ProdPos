@@ -1,0 +1,73 @@
+{% extends 'ems/base.html' %}
+
+{% block title %}Add Outcome{% endblock %}
+
+{% block content %}
+<div class="container py-5 d-flex justify-content-center">
+  <div class="card shadow-lg border-0 rounded-4" style="max-width: 850px; width: 100%;">
+
+    <div class="card-header text-white rounded-top-4"
+         style="background: linear-gradient(90deg, #4dd8ae, #198754);">
+      <h4 class="mb-0 text-center fw-semibold">
+        <i class="bi bi-clipboard2-check me-2"></i>
+        Add Outcome for {{ event.name }}
+      </h4>
+    </div>
+
+    <div class="card-body bg-light px-4 pb-4">
+
+      <form method="post">
+        {% csrf_token %}
+
+        <!-- Start Date -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Start Date</label>
+          <input type="datetime-local" class="form-control" name="start_date" required>
+        </div>
+
+        <!-- End Date -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">End Date</label>
+          <input type="datetime-local" class="form-control" name="end_date" required>
+        </div>
+
+        <!-- Duration -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Duration (hours)</label>
+          <input type="number" class="form-control" name="duration" min="0" step="0.1" required>
+        </div>
+
+        <!-- Rapporteur -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Rapporteur</label>
+          <input type="text" class="form-control" name="rapporteur" required>
+        </div>
+
+        <!-- Outcome Summary -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Outcome Summary</label>
+          <textarea class="form-control" name="outcome_text" rows="3" required></textarea>
+        </div>
+
+        <!-- Recommendation -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Recommendations</label>
+          <textarea class="form-control" name="recommendation" rows="3"></textarea>
+        </div>
+
+        <!-- Buttons -->
+        <div class="d-flex justify-content-between mt-4">
+          <a href="{% url 'event_detail' event.id %}" class="btn btn-secondary px-4">Back</a>
+
+          <button type="submit" class="btn text-white px-5"
+                  style="background: linear-gradient(90deg, #0d6efd, #4dd8ae);">
+            + Add Outcome
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

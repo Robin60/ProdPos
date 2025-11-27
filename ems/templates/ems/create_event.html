@@ -1,0 +1,120 @@
+{% extends 'ems/base.html' %}
+
+{% block title %}Add Event{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5 d-flex justify-content-center">
+  <div class="card shadow-lg border-0 rounded-4" style="max-width: 950px; width: 100%;">
+
+    <div class="card-header text-white rounded-top-4"
+         style="background: linear-gradient(90deg, #ED6EA3, #4dd8ae);">
+      <h4 class="mb-0 text-center fw-semibold">
+        <i class="bi bi-journal-plus me-2"></i>Log Event
+      </h4>
+    </div>
+
+    <div class="px-4 pt-4">
+      <h5 class="text-primary fw-semibold">
+        <i class="bi bi-calendar-plus me-2"></i>Add New Event
+      </h5>
+      <hr>
+    </div>
+
+    <div class="card-body bg-light px-4 pb-4">
+      <form method="post" action="{% url 'create_event' %}" onsubmit="return validateForm()">
+        {% csrf_token %}
+
+        <!-- Event Title -->
+        <div class="mb-3">
+          <label for="eventName" class="form-label fw-semibold">Event Title</label>
+          <input type="text" class="form-control" id="eventName" name="name" required>
+        </div>
+
+        <!-- Category -->
+        <div class="mb-3">
+          <label for="eventCategory" class="form-label fw-semibold">Category</label>
+          <select class="form-select" id="eventCategory" name="category" required>
+            <option value="">Select category</option>
+            {% for category in categories %}
+              <option value="{{ category.id }}">{{ category.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Project Type -->
+        <div class="mb-3">
+          <label for="projectType" class="form-label fw-semibold">Project Type</label>
+          <select class="form-select" id="projectType" name="project_type" required>
+            <option value="">Select project type</option>
+            <option value="kwp2">PROTECT WP2</option>
+            <option value="kwp3">PROTECT WP3</option>
+            <option value="kwp">PROTECT WP4</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <!-- Organizer -->
+        <div class="mb-3">
+          <label for="organizer" class="form-label fw-semibold">Organizer</label>
+          <input type="text" class="form-control" id="organizer" name="organizer">
+        </div>
+
+        <!-- Start and End Dates -->
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="startDate" class="form-label fw-semibold">Start Date</label>
+            <input type="datetime-local" class="form-control" id="startDate" name="start_date" required>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="endDate" class="form-label fw-semibold">End Date</label>
+            <input type="datetime-local" class="form-control" id="endDate" name="end_date" required>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="mb-3">
+          <label for="description" class="form-label fw-semibold">Description</label>
+          <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+        </div>
+
+        <!-- Location -->
+        <div class="mb-3">
+          <label for="location" class="form-label fw-semibold">Location</label>
+          <input type="text" class="form-control" id="location" name="location">
+        </div>
+
+        <!-- Participants -->
+        <div class="mb-3">
+          <label for="participants" class="form-label fw-semibold">Participants</label>
+          <textarea class="form-control" id="participants" name="participants"
+                    rows="3" placeholder="Enter participants (comma-separated)"></textarea>
+        </div>
+
+        <!-- Buttons -->
+        <div class="d-flex justify-content-between mt-4">
+          <a href="{% url 'category_list' %}" class="btn btn-secondary px-4">Cancel</a>
+          <button type="submit" class="btn text-white px-5"
+                  style="background: linear-gradient(90deg, #198754, #20c997);">
+            + Add Event
+          </button>
+        </div>
+
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function validateForm() {
+    const startDate = document.getElementById("startDate").value;
+    const endDate = document.getElementById("endDate").value;
+    if (new Date(startDate) >= new Date(endDate)) {
+      alert("End date must be after the start date.");
+      return false;
+    }
+    return true;
+  }
+</script>
+
+{% endblock %}
