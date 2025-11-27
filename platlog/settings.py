@@ -51,7 +51,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'platlog.urls'
-SESSION_COOKIE_AGE = 40# seconds
+SESSION_COOKIE_AGE = 400# seconds
 
 #LOGIN_URL = '/accounts/login/'  # redirect for anonymous users
 #LOGIN_REDIRECT_URL = '/'         # where to go after login
@@ -80,8 +80,12 @@ WSGI_APPLICATION = 'platlog.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'platlog_db',
+        'USER': 'admin',
+        'PASSWORD': 'Admin@2025',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
 

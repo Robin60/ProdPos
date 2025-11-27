@@ -292,7 +292,8 @@ def outcome_list_create(request, event_id):
 @login_required(login_url='login')
 def event_timeline(request):
     """Render timeline with events and related outcomes."""
-    events = Event.objects.filter(user=request.user).order_by('start_date')
+    #events = Event.objects.filter(user=request.user).order_by('start_date')
+    events = Event.objects.all().order_by('start_date')
 
     logs_list = []
     for event in events:
@@ -396,7 +397,7 @@ def outcome_detail(request, outcome_id):
 @login_required(login_url='login')
 def outcome_update(request, outcome_id):
     """Update an existing outcome."""
-    outcome = get_object_or_404(Outcome, pk=outcome_id, event__user=request.user)
+    outcome = get_object_or_404(Outcome, pk=outcome_id)
 
     if request.method != "POST":
         return JsonResponse({"error": "Invalid method"}, status=405)
