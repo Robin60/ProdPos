@@ -54,7 +54,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'platlog.urls'
-SESSION_COOKIE_AGE = 400# seconds
+SESSION_COOKIE_AGE = 900# seconds
 
 #LOGIN_URL = '/accounts/login/'  # redirect for anonymous users
 #LOGIN_REDIRECT_URL = '/'         # where to go after login
