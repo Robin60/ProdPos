@@ -25,9 +25,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-i+jrw+vvu9qlez5@&*6v(_j2yx4(&cg=opi9t&ottiya^0dgj4'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['localhost', '.onrender.com']
+ALLOWED_HOSTS = ['16.171.74.209','172.31.26.27']
 
 
 # Application definition
@@ -54,7 +54,9 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'platlog.urls'
-SESSION_COOKIE_AGE = 900# seconds
+SESSION_COOKIE_AGE = 1900# seconds
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 #LOGIN_URL = '/accounts/login/'  # redirect for anonymous users
 #LOGIN_REDIRECT_URL = '/'         # where to go after login
@@ -82,12 +84,15 @@ WSGI_APPLICATION = 'platlog.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    "default": dj_database_url.config(
-        default=os.environ.get("DATABASE_URL"),
-        conn_max_age=600,
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'platlog_db',
+        'USER': 'admin',
+        'PASSWORD': 'Admin@2025',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

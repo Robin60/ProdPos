@@ -88,6 +88,12 @@ def create_category(request):
 @login_required(login_url='login')
 def delete_category(request, category_id):
     """Delete a category only if it has no events."""
+    if not request.user.is_superuser:
+        messages.error(
+                request,
+                "!You are not authorized to delete programme. Please contact an administrator"
+                )
+        return redirect(request.META.get('HTTP_REFERER', 'event_timeline'))
     category = get_object_or_404(Category, pk=category_id)
     if category.event_set.exists():
         messages.error(request, "You cannot delete this programme as it contains events.")
@@ -173,6 +179,13 @@ def update_event(request, event_id):
 @login_required(login_url='login')
 def delete_event(request, event_id):
     """Delete an event."""
+    if not request.user.is_superuser:
+        messages.error(
+                request,
+                "!You are not authorized to delete events. Please contact an administrator"
+                )
+        return redirect(request.META.get('HTTP_REFERER', 'event_timeline'))
+
     if request.method == 'POST':
         event = get_object_or_404(Event, pk=event_id)
         event.delete()
